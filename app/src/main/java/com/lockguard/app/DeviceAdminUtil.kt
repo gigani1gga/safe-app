@@ -30,10 +30,11 @@ object DeviceAdminUtil {
         }
 
         for (r in RESTRICTIONS) {
-            try { dpm.addUserRestriction(admin, r) } catch (ex: Exception) { /* best-effort */ }
+            try {
+                dpm.addUserRestriction(admin, r)
+            } catch (_: Exception) { }
         }
 
-        // Optionally: disable keyguard features / force additional policies if desired.
         Toast.makeText(context, "Device-owner restrictions applied", Toast.LENGTH_SHORT).show()
     }
 
@@ -44,7 +45,9 @@ object DeviceAdminUtil {
         if (dpm == null) return
 
         for (r in RESTRICTIONS) {
-            try { dpm.clearUserRestriction(admin, r) } catch (ex: Exception) { /* best-effort */ }
+            try {
+                dpm.clearUserRestriction(admin, r)
+            } catch (_: Exception) { }
         }
 
         Toast.makeText(context, "Device-owner restrictions cleared", Toast.LENGTH_SHORT).show()
