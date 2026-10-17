@@ -3,6 +3,7 @@ package com.lockguard.app
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
+import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -10,7 +11,6 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import android.graphics.Color
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,20 +29,26 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
 
-        root.addView(title, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 24 })
+        root.addView(
+            title,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+        )
 
         val enableBtn = Button(this).apply {
             text = "Enable device-owner enforcement"
             setOnClickListener { onEnableClicked() }
         }
 
-        root.addView(enableBtn, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ))
+        root.addView(
+            enableBtn,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
 
         setContentView(root)
     }
@@ -52,10 +58,8 @@ class MainActivity : Activity() {
         val admin = ComponentName(this, AdminReceiver::class.java)
 
         if (dpm != null && dpm.isDeviceOwnerApp(packageName)) {
-            // App is device owner — apply restrictions immediately
             DeviceAdminUtil.applyEnforcement(this)
         } else {
-            // Not device owner — show provisioning instructions
             val msg = StringBuilder()
             msg.append("App is not device owner. To enable full enforcement you must provision the app as device owner.\n\n")
             msg.append("Provisioning (ADB, requires factory-reset / fresh device):\n")
