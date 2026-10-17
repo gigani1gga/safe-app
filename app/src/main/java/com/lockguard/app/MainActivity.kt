@@ -60,25 +60,33 @@ class MainActivity : Activity() {
         }
 
         addButton("3. Allow display over other apps") {
-            startActivity(
-                Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
+            if (Settings.canDrawOverlays(this)) {
+                Toast.makeText(this, "Overlay permission already granted", Toast.LENGTH_SHORT).show()
+            } else {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
                 )
-            )
+            }
         }
 
         addButton("4. Enable device admin") {
-            val i = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-            i.putExtra(
-                DevicePolicyManager.EXTRA_DEVICE_ADMIN,
-                ComponentName(this, AdminReceiver::class.java)
-            )
-            i.putExtra(
-                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "Stops the app being uninstalled without your say."
-            )
-            startActivity(i)
+            val admin = ComponentName(this, AdminReceiver::class.java)
+            val dpm = getSystemService(DevicePolicyManager::class.java)
+
+            if (dpm.isAdminActive(admin)) {
+                Toast.makeText(this, "Device admin already enabled", Toast.LENGTH_SHORT).show()
+            } else {
+                val i = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                i.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
+                i.putExtra(
+                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "Stops the app being uninstalled without your say."
+                )
+                startActivity(i)
+            }
         }
 
         addButton("5. Turn on accessibility service") {
@@ -92,6 +100,19 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val admin = ComponentName(this, AdminReceiver::class.java)
+        val dpm = getSystemService(DevicePolicyManager::class.java)
+
+        if (Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Overlay permission enabled", Toast.LENGTH_SHORT).show()
+        }
+        if (dpm.isAdminActive(admin)) {
+            Toast.makeText(this, "Device admin enabled", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
