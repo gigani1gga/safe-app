@@ -1,0 +1,38 @@
+name: Organize files
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  organize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Organize and rename files
+        run: |
+          move() {
+            if [ -f "$1" ]; then
+              mkdir -p "$(dirname "$2")"
+              git mv -f "$1" "$2"
+            fi
+          }
+          J=app/src/main/java/com/lockguard/app
+          move app__build.gradle app/build.gradle
+          move app__src__main__AndroidManifest.xml app/src/main/AndroidManifest.xml
+          move app__src__main__res__xml__accessibility_config.xml app/src/main/res/xml/accessibility_config.xml
+          move app__src__main__res__xml__device_admin.xml app/src/main/res/xml/device_admin.xml
+          move app__src__main__res__values__strings.xml app/src/main/res/values/strings.xml
+          move app__src__main__java__com__lockguard__app__AdminReceiver.kt $J/AdminReceiver.kt
+          move app__src__main__java__com__lockguard__app__Core.kt $J/Core.kt
+          move app__src__main__java__com__lockguard__app__GuardService.kt $J/GuardService.kt
+          move app__src__main__java__com__lockguard__app__MainActivity.kt $J/MainActivity.kt
+          move app__src__main__java__com__lockguard__app__PasswordActivity.kt $J/PasswordActivity.kt
+          git rm -rf --ignore-unmatch $J/DeviceAdminUtil.kt deleted "gone. exe" github
+          git add -A
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git commit -m "Organize uploaded files"
+            git push origin HEAD
+          fi
