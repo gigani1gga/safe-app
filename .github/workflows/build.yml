@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -55,13 +55,13 @@ jobs:
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk SecurityApp-build-${{ github.run_number }}.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk SecurityApp.apk
 
       - name: Write summary
         run: |
-          size=$(du -h SecurityApp-build-${{ github.run_number }}.apk | cut -f1)
+          size=$(du -h SecurityApp.apk | cut -f1)
           echo "### APK built ($size)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Download it from the Releases page: build-${{ github.run_number }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release: build-${{ github.run_number }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save build reports if the build failed
         if: failure()
@@ -77,6 +77,6 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: Build ${{ github.run_number }}
           body: "Debug APK, signed with the debug key. Tap the APK below to install."
-          files: SecurityApp-build-${{ github.run_number }}.apk
+          files: SecurityApp.apk
           fail_on_unmatched_files: true
           make_latest: true
