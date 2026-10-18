@@ -1,4 +1,3 @@
-
 package com.lockguard.app
 
 import android.accessibilityservice.AccessibilityService
@@ -7,29 +6,42 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 
 class GuardService : AccessibilityService() {
     private var lastTrigger = 0L
+    private val handler = Handler(Looper.getMainLooper())
 
-    private val airplaneReceiver = object : BroadcastReceiver() {
+    private val receiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
-            trigger(false)
+            when (i.action) {
+                Intent.ACTION_AIRPLANE_MODE_CHANGED -> trigger(false)
+                Intent.ACTION_SCREEN_OFF -> Locker.unlockedPkg = null
+                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT ->
+                    handler.postDelayed({ checkForeground() }, 500)
+            }
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        registerReceiver(
-            airplaneReceiver,
-            IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED)
-        )
+        val f = IntentFilter()
+        f.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
+        f.addAction(Intent.ACTION_SCREEN_OFF)
+        f.addAction(Intent.ACTION_SCREEN_ON)
+        f.addAction(Intent.ACTION_USER_PRESENT)
+        registerReceiver(receiver, f)
     }
 
     private fun isLocked(): Boolean {
         val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         return km.isKeyguardLocked
     }
+
+    // ---- power menu / quick settings / airplane mode guard ----
 
     private fun trigger(closeFirst: Boolean) {
         if (!Store.hasPassword(this)) return
@@ -45,9 +57,69 @@ class GuardService : AccessibilityService() {
         startActivity(i)
     }
 
+    // ---- app lock ----
+
+    private fun imePackage(): String? {
+        val id = Settings.Secure.getString(
+            contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD
+        ) ?: return null
+        return id.substringBefore('/')
+    }
+
+    private fun requireUnlock(pkg: String) {
+        if (Locker.unlockedPkg == pkg) return
+        val now = System.currentTimeMillis()
+        if (Locker.showingFor == pkg && now - Locker.lastShow < 1500) return
+        Locker.showingFor = pkg
+        Locker.lastShow = now
+        val i = Intent(this, AppLockActivity::class.java)
+        i.putExtra("target", pkg)
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(i)
+    }
+
+    private fun evaluate(pkg: String, cls: String?) {
+        if (!Store.hasPassword(this)) return
+        val c = (cls ?: "").lowercase()
+
+        // Recents screen: leaving an app that way counts as leaving it.
+        if (c.contains("recents")) {
+            Locker.unlockedPkg = null
+            return
+        }
+
+        // This app's own screens are protected too, except the two lock screens.
+        if (pkg == packageName) {
+            if (c.endsWith("applockactivity") || c.endsWith("passwordactivity")) return
+            requireUnlock(pkg)
+            return
+        }
+
+        // Keyboards and system pop-ups do not count as leaving the app.
+        if (pkg == "android" || pkg.contains("systemui") || pkg == imePackage()) return
+
+        if (Store.lockedApps(this).contains(pkg)) {
+            requireUnlock(pkg)
+        } else {
+            Locker.unlockedPkg = null
+        }
+    }
+
+    private fun checkForeground() {
+        val pkg = rootInActiveWindow?.packageName?.toString() ?: return
+        if (pkg == packageName) return
+        evaluate(pkg, null)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val pkg = event.packageName?.toString() ?: return
+
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            evaluate(pkg, event.className?.toString())
+        }
+
+        // power menu / quick settings guard
         if (pkg == packageName) return
         if (pkg != "android" && !pkg.contains("systemui")) return
 
@@ -72,7 +144,7 @@ class GuardService : AccessibilityService() {
     override fun onInterrupt() { }
 
     override fun onDestroy() {
-        try { unregisterReceiver(airplaneReceiver) } catch (e: Exception) { }
+        try { unregisterReceiver(receiver) } catch (e: Exception) { }
         super.onDestroy()
     }
 }

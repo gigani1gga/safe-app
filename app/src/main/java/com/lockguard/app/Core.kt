@@ -22,12 +22,38 @@ object Store {
 
     fun check(c: Context, p: String) = prefs(c).getString("pw", null) == hash(p)
 
+    // Changing a password needs the current one. The first password needs nothing.
+    fun changePassword(c: Context, old: String, new: String): Boolean {
+        if (hasPassword(c) && !check(c, old)) return false
+        setPassword(c, new)
+        return true
+    }
+
+    fun lockedApps(c: Context): Set<String> =
+        HashSet(prefs(c).getStringSet("locked", emptySet()) ?: emptySet())
+
+    fun setLockedApps(c: Context, apps: Set<String>) =
+        prefs(c).edit().putStringSet("locked", HashSet(apps)).apply()
+
+    fun fingerprintOn(c: Context) = prefs(c).getBoolean("fp", false)
+
+    fun setFingerprint(c: Context, on: Boolean) =
+        prefs(c).edit().putBoolean("fp", on).apply()
+
     fun setRingtone(c: Context, uri: String?) =
         prefs(c).edit().putString("rt", uri).apply()
 
     fun ringtone(c: Context): Uri =
         prefs(c).getString("rt", null)?.let { Uri.parse(it) }
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+}
+
+// Which app is currently unlocked. Lives in memory only, so a reboot or a
+// killed process locks everything again.
+object Locker {
+    var unlockedPkg: String? = null
+    var showingFor: String? = null
+    var lastShow = 0L
 }
 
 object Alarm {
@@ -48,9 +74,16 @@ object Alarm {
                 am.getStreamMaxVolume(AudioManager.STREAM_ALARM),
                 0
             )
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
 
-        try {
+        player = play(ctx, Store.ringtone(ctx))
+            ?: play(ctx, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
+            ?: play(ctx, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+    }
+
+    private fun play(ctx: Context, uri: Uri?): MediaPlayer? {
+        if (uri == null) return null
+        return try {
             val p = MediaPlayer()
             p.setAudioAttributes(
                 AudioAttributes.Builder()
@@ -58,18 +91,18 @@ object Alarm {
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             )
-            p.setDataSource(ctx, Store.ringtone(ctx))
+            p.setDataSource(ctx, uri)
             p.isLooping = true
             p.prepare()
             p.start()
-            player = p
-        } catch (_: Exception) {
-            player = null
+            p
+        } catch (e: Exception) {
+            null
         }
     }
 
     fun stop() {
-        try { player?.stop() } catch (_: Exception) { }
+        try { player?.stop() } catch (e: Exception) { }
         player?.release()
         player = null
     }

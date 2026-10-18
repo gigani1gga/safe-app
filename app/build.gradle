@@ -7,10 +7,30 @@ android {
     compileSdk 34
     defaultConfig {
         applicationId "com.lockguard.app"
-        minSdk 26
+        minSdk 28
         targetSdk 34
-        versionCode 1
+        // GitHub passes the run number, so every build is newer than the last
+        versionCode Integer.parseInt(project.findProperty('vc')?.toString() ?: '1')
         versionName "1.0"
+    }
+    signingConfigs {
+        fixed {
+            def ks = System.getenv("KEYSTORE_FILE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias "lockguard"
+                keyPassword System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            // Same key every build, so a new APK installs over the old one
+            if (System.getenv("KEYSTORE_FILE")) {
+                signingConfig signingConfigs.fixed
+            }
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

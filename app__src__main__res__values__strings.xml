@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Security App</string>
-    <string name="service_desc">Sees which app is open so it can ask for your password on the apps you locked, and guards the power menu, quick settings and airplane mode while the phone is locked.</string>
-</resources>

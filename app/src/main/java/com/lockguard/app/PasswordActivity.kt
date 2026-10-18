@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 
 class PasswordActivity : Activity() {
     private var timer: CountDownTimer? = null
@@ -19,6 +20,11 @@ class PasswordActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!Store.hasPassword(this)) {
+            Toast.makeText(this, "Set a password first", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         window.addFlags(
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
             WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or

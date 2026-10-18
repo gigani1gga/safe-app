@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -17,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 
 class MainActivity : Activity() {
+    private lateinit var scroll: ScrollView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,36 +32,62 @@ class MainActivity : Activity() {
         title.textSize = 24f
         root.addView(title)
 
-        val pw = EditText(this)
-        pw.hint = "Choose a password (4+ characters)"
-        pw.inputType =
+        val oldPw = EditText(this)
+        oldPw.hint = "Current password (empty the first time)"
+        oldPw.inputType =
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        root.addView(pw)
+        root.addView(oldPw)
 
-        fun addButton(label: String, action: () -> Unit) {
+        val newPw = EditText(this)
+        newPw.hint = "New password (4+ characters)"
+        newPw.inputType =
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        root.addView(newPw)
+
+        fun addButton(label: String, action: () -> Unit): Button {
             val b = Button(this)
             b.text = label
             b.setOnClickListener { action() }
             root.addView(b)
+            return b
         }
 
-        addButton("1. Save password") {
-            if (pw.text.length >= 4) {
-                Store.setPassword(this, pw.text.toString())
+        addButton("1. Set or change password") {
+            val n = newPw.text.toString()
+            if (n.length < 4) {
+                Toast.makeText(this, "New password is too short", Toast.LENGTH_SHORT).show()
+            } else if (Store.changePassword(this, oldPw.text.toString(), n)) {
+                oldPw.setText("")
+                newPw.setText("")
+                Locker.unlockedPkg = packageName
                 Toast.makeText(this, "Password saved", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Too short", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Current password is wrong", Toast.LENGTH_SHORT).show()
             }
         }
 
-        addButton("2. Choose alarm sound") {
+        addButton("2. Choose apps to lock") {
+            startActivity(Intent(this, AppPickerActivity::class.java))
+        }
+
+        val fp = addButton("") { }
+        fun refreshFp() {
+            fp.text = "3. Fingerprint unlock: " + if (Store.fingerprintOn(this)) "ON" else "OFF"
+        }
+        fp.setOnClickListener {
+            Store.setFingerprint(this, !Store.fingerprintOn(this))
+            refreshFp()
+        }
+        refreshFp()
+
+        addButton("4. Choose alarm sound") {
             val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
             i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
             i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Store.ringtone(this))
             startActivityForResult(i, 1)
         }
 
-        addButton("3. Allow display over other apps") {
+        addButton("5. Allow display over other apps") {
             startActivity(
                 Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -68,7 +96,7 @@ class MainActivity : Activity() {
             )
         }
 
-        addButton("4. Enable device admin") {
+        addButton("6. Enable device admin") {
             val i = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
             i.putExtra(
                 DevicePolicyManager.EXTRA_DEVICE_ADMIN,
@@ -81,17 +109,32 @@ class MainActivity : Activity() {
             startActivity(i)
         }
 
-        addButton("5. Turn on accessibility service") {
+        addButton("7. Turn on accessibility service") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
-        addButton("Test the password screen") {
+        addButton("Test the alarm password screen") {
             startActivity(Intent(this, PasswordActivity::class.java))
         }
 
-        val scroll = ScrollView(this)
+        scroll = ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
+    }
+
+    // This screen asks for the password too, so nobody can edit the lock list.
+    override fun onResume() {
+        super.onResume()
+        if (Store.hasPassword(this) && Locker.unlockedPkg != packageName) {
+            scroll.visibility = View.INVISIBLE
+            Locker.showingFor = packageName
+            Locker.lastShow = System.currentTimeMillis()
+            val i = Intent(this, AppLockActivity::class.java)
+            i.putExtra("target", packageName)
+            startActivity(i)
+        } else {
+            scroll.visibility = View.VISIBLE
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
