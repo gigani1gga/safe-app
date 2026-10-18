@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   organize:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -14,25 +14,28 @@ jobs:
         run: |
           J=app/src/main/java/com/lockguard/app
 
-          # Name recognition: returns the correct path for a known file name
+          # Name recognition: returns the correct path for a known file name.
+          # Any other name with "__" in it is turned into a path automatically.
           target() {
             case "$1" in
-              app__build.gradle) echo "app/build.gradle";;
-              AndroidManifest.xml|app__src__main__AndroidManifest.xml) echo "app/src/main/AndroidManifest.xml";;
-              accessibility_config.xml|app__src__main__res__xml__accessibility_config.xml) echo "app/src/main/res/xml/accessibility_config.xml";;
-              device_admin.xml|app__src__main__res__xml__device_admin.xml) echo "app/src/main/res/xml/device_admin.xml";;
-              strings.xml|app__src__main__res__values__strings.xml) echo "app/src/main/res/values/strings.xml";;
-              AdminReceiver.kt|app__src__main__java__com__lockguard__app__AdminReceiver.kt) echo "$J/AdminReceiver.kt";;
-              Core.kt|app__src__main__java__com__lockguard__app__Core.kt) echo "$J/Core.kt";;
-              GuardService.kt|app__src__main__java__com__lockguard__app__GuardService.kt) echo "$J/GuardService.kt";;
-              MainActivity.kt|app__src__main__java__com__lockguard__app__MainActivity.kt) echo "$J/MainActivity.kt";;
-              PasswordActivity.kt|app__src__main__java__com__lockguard__app__PasswordActivity.kt) echo "$J/PasswordActivity.kt";;
+              dot-github*) ;;
+              AndroidManifest.xml) echo "app/src/main/AndroidManifest.xml";;
+              accessibility_config.xml) echo "app/src/main/res/xml/accessibility_config.xml";;
+              device_admin.xml) echo "app/src/main/res/xml/device_admin.xml";;
+              strings.xml) echo "app/src/main/res/values/strings.xml";;
+              AdminReceiver.kt) echo "$J/AdminReceiver.kt";;
+              Core.kt) echo "$J/Core.kt";;
+              GuardService.kt) echo "$J/GuardService.kt";;
+              MainActivity.kt) echo "$J/MainActivity.kt";;
+              PasswordActivity.kt) echo "$J/PasswordActivity.kt";;
+              AppLockActivity.kt) echo "$J/AppLockActivity.kt";;
+              AppPickerActivity.kt) echo "$J/AppPickerActivity.kt";;
+              *__*) echo "${1//__//}";;
             esac
           }
 
-          # Look at every file in the top folder. Phone duplicates like
-          # "Core (1).kt" count as the same file; a higher number is newer
-          # and is processed last, so it wins.
+          # Phone duplicates like "Core (1).kt" count as the same file;
+          # a higher number is newer and is processed last, so it wins.
           for f in *; do
             [ -f "$f" ] || continue
             clean=$(echo "$f" | sed -E 's/ ?\([0-9]+\)(\.[^.]*)$/\1/')
