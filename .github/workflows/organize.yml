@@ -9,26 +9,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Organize and rename files
+
+      - name: Replace old files with new uploads
         run: |
-          move() {
-            if [ -f "$1" ]; then
-              mkdir -p "$(dirname "$2")"
-              git mv -f "$1" "$2"
-            fi
-          }
           J=app/src/main/java/com/lockguard/app
-          move app__build.gradle app/build.gradle
-          move app__src__main__AndroidManifest.xml app/src/main/AndroidManifest.xml
-          move app__src__main__res__xml__accessibility_config.xml app/src/main/res/xml/accessibility_config.xml
-          move app__src__main__res__xml__device_admin.xml app/src/main/res/xml/device_admin.xml
-          move app__src__main__res__values__strings.xml app/src/main/res/values/strings.xml
-          move app__src__main__java__com__lockguard__app__AdminReceiver.kt $J/AdminReceiver.kt
-          move app__src__main__java__com__lockguard__app__Core.kt $J/Core.kt
-          move app__src__main__java__com__lockguard__app__GuardService.kt $J/GuardService.kt
-          move app__src__main__java__com__lockguard__app__MainActivity.kt $J/MainActivity.kt
-          move app__src__main__java__com__lockguard__app__PasswordActivity.kt $J/PasswordActivity.kt
-          git rm -rf --ignore-unmatch $J/DeviceAdminUtil.kt deleted "gone. exe" github
+
+          # Name recognition: returns the correct path for a known file name
+          target() {
+            case "$1" in
+              app__build.gradle) echo "app/build.gradle";;
+              AndroidManifest.xml|app__src__main__AndroidManifest.xml) echo "app/src/main/AndroidManifest.xml";;
+              accessibility_config.xml|app__src__main__res__xml__accessibility_config.xml) echo "app/src/main/res/xml/accessibility_config.xml";;
+              device_admin.xml|app__src__main__res__xml__device_admin.xml) echo "app/src/main/res/xml/device_admin.xml";;
+              strings.xml|app__src__main__res__values__strings.xml) echo "app/src/main/res/values/strings.xml";;
+              AdminReceiver.kt|app__src__main__java__com__lockguard__app__AdminReceiver.kt) echo "$J/AdminReceiver.kt";;
+              Core.kt|app__src__main__java__com__lockguard__app__Core.kt) echo "$J/Core.kt";;
+              GuardService.kt|app__src__main__java__com__lockguard__app__GuardService.kt) echo "$J/GuardService.kt";;
+              MainActivity.kt|app__src__main__java__com__lockguard__app__MainActivity.kt) echo "$J/MainActivity.kt";;
+              PasswordActivity.kt|app__src__main__java__com__lockguard__app__PasswordActivity.kt) echo "$J/PasswordActivity.kt";;
+            esac
+          }
+
+          # Look at every file in the top folder. Phone duplicates like
+          # "Core (1).kt" count as the same file; a higher number is newer
+          # and is processed last, so it wins.
+          for f in *; do
+            [ -f "$f" ] || continue
+            clean=$(echo "$f" | sed -E 's/ ?\([0-9]+\)(\.[^.]*)$/\1/')
+            n=$(echo "$f" | sed -nE 's/^.*\(([0-9]+)\)\.[^.]*$/\1/p')
+            n=${n:-0}
+            t=$(target "$clean")
+            [ -n "$t" ] || continue
+            echo "$n|$f|$t"
+          done | sort -t'|' -k1,1n | while IFS='|' read -r n f t; do
+            git rm -qf --ignore-unmatch "$t"
+            mkdir -p "$(dirname "$t")"
+            git mv -f "$f" "$t"
+            echo "Replaced $t using $f"
+          done
+
+          # Old leftovers from earlier versions
+          git rm -rqf --ignore-unmatch "$J/DeviceAdminUtil.kt" deleted "gone. exe" github
+
           git add -A
           if ! git diff --cached --quiet; then
             git config user.name "github-actions"
