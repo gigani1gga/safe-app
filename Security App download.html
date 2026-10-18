@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Security App download</title>
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: light;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #15181d;
+    --muted: #5b6370;
+    --accent: #1a73e8;
+    --accent-text: #ffffff;
+    --border: #dfe3e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0f1216;
+      --card: #181c22;
+      --text: #f0f2f5;
+      --muted: #9aa3b0;
+      --accent: #5b9dff;
+      --accent-text: #08111f;
+      --border: #2a313b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1216;
+    --card: #181c22;
+    --text: #f0f2f5;
+    --muted: #9aa3b0;
+    --accent: #5b9dff;
+    --accent-text: #08111f;
+    --border: #2a313b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    padding: 24px 16px 40px;
+    display: flex;
+    justify-content: center;
+  }
+  main { width: 100%; max-width: 480px; }
+  h1 { font-size: 1.6rem; margin: 8px 0 4px; text-align: center; }
+  .sub { color: var(--muted); text-align: center; margin: 0 0 24px; }
+  .big {
+    display: block;
+    width: 100%;
+    padding: 26px 16px;
+    background: var(--accent);
+    color: var(--accent-text);
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 20px;
+  }
+  .big small { display: block; font-size: 0.85rem; font-weight: 500; opacity: 0.85; margin-top: 4px; }
+  .alt { text-align: center; margin: 14px 0 28px; }
+  .alt a { color: var(--accent); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+  }
+  .card h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  .card ol { margin: 0; padding-left: 20px; }
+  .card li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Security App</h1>
+  <p class="sub">Latest build for Android</p>
+
+  <a class="big" href="https://github.com/gigani1gga/safe-app/releases/latest/download/SecurityApp.apk">
+    Download APK
+    <small>Always the newest build</small>
+  </a>
+
+  <p class="alt">Download didn’t start? <a href="https://github.com/gigani1gga/safe-app/releases/latest">Open the releases page</a></p>
+
+  <div class="card">
+    <h2>Install and set up</h2>
+    <ol>
+      <li>Open the downloaded file and tap Install. Allow installs from your browser if asked.</li>
+      <li>In the app, go through buttons 1 to 5 from the top.</li>
+      <li>If the accessibility toggle is greyed out: Settings, Apps, Security App, menu, Allow restricted settings.</li>
+    </ol>
+  </div>
+</main>
+</body>
+</html>
